@@ -14,12 +14,7 @@ public class SquirrelConfig {
     /// Shared config
     public static var shared: SquirrelConfig? = nil {
         didSet {
-            guard let instance = shared else {
-                return
-            }
-            observers.forEach { observer in
-                observer(instance.rootNode)
-            }
+            update()
         }
     }
 
@@ -28,7 +23,7 @@ public class SquirrelConfig {
 
     private let yaml: Node
 
-    private static var observers = [(rootNode: Node) -> ()]()
+    private static var observers = [(String, (rootNode: Node) -> ())]()
 
     /// Constructs shared config and set `SquirrelConfig.shared` to this instance
     ///
@@ -46,11 +41,31 @@ public class SquirrelConfig {
         SquirrelConfig.shared = self
     }
 
+    /// Update all observers
+    public static func update() {
+        guard let instance = shared else {
+            return
+        }
+
+        observers.forEach { (_, observer) in
+            observer(instance.rootNode)
+        }
+    }
+
     /// Set closure to update values when config file changes
     ///
-    /// - Parameter closure: Updating closure
-    public static func addObserver(closure: @escaping (Node) -> ()) {
-        observers.append(closure)
+    /// - Parameters:
+    ///   - name: Uniq name
+    ///   - closure: Updating closure
+    public static func addObserver(name: String, closure: @escaping (Node) -> ()) {
+        observers.append((name, closure))
+    }
+
+    /// Remove observer with given name
+    ///
+    /// - Parameter name: Observer name
+    public static func removeObserver(name: String) {
+        observers = observers.filter { $0.0 != name }
     }
 
     /// Get root node
